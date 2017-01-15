@@ -545,6 +545,46 @@ Room.prototype.setRoomToInactive = function() {
   this.memory.active = false;
 };
 
+Room.prototype.canRoomHelpToRevive = function(roomIndex) {
+  let roomName = Memory.myRooms[roomIndex];
+  if (this.name == roomName) {
+    return false;
+  }
+  let roomOther = Game.rooms[roomName];
+  roomOther.log('Can I revive?');
+  if (!roomOther.memory.active) {
+    roomOther.log('No active');
+    return false;
+  }
+  if (!roomOther.storage || roomOther.storage.store.energy < config.room.reviveStorageAvailable) {
+    roomOther.log('No storage');
+    return false;
+  }
+  // TODO find a proper value
+  if (roomOther.memory.queue.length > 4) {
+    roomOther.log('No queue');
+    return false;
+  }
+
+  // TODO config value, meaningful
+  if (roomOther.energyCapacityAvailable < 1300) {
+    roomOther.log('Too Small');
+    return false;
+  }
+
+  let distance = Game.map.getRoomLinearDistance(this.name, roomName);
+  if (distance < config.nextRoom.maxDistance) {
+    let route = this.findRoute(roomOther.name, this.name);
+    // TODO Instead of skipping we could try to free up the way: nextroomerattack or squad
+    if (route.length === 0) {
+      roomOther.log('No route to other room: ' + roomOther.name);
+      return false;
+    }
+    return true;
+  }
+  return false;
+};
+
 Room.prototype.callNextroomers = function() {
   let nextroomerCalled = 0;
   let room = this;
@@ -556,41 +596,9 @@ Room.prototype.callNextroomers = function() {
     if (nextroomerCalled > config.nextRoom.numberOfNextroomers) {
       break;
     }
-    let roomName = Memory.myRooms[roomIndex];
-    if (this.name == roomName) {
-      continue;
-    }
-    let roomOther = Game.rooms[roomName];
-    roomOther.log('Can I revive?');
-    if (!roomOther.memory.active) {
-      roomOther.log('No active');
-      continue;
-    }
-    if (!roomOther.storage || roomOther.storage.store.energy < config.room.reviveStorageAvailable) {
-      roomOther.log('No storage');
-      continue;
-    }
-    // TODO find a proper value
-    if (roomOther.memory.queue.length > 4) {
-      roomOther.log('No queue');
-      continue;
-    }
-
-    // TODO config value, meaningful
-    if (roomOther.energyCapacityAvailable < 1300) {
-      roomOther.log('Too Small');
-      continue;
-    }
-
-    let distance = Game.map.getRoomLinearDistance(this.name, roomName);
-    if (distance < config.nextRoom.maxDistance) {
-      let route = this.findRoute(roomOther.name, this.name);
-      // TODO Instead of skipping we could try to free up the way: nextroomerattack or squad
-      if (route.length === 0) {
-        roomOther.log('No route to other room: ' + roomOther.name);
-        continue;
-      }
-
+    if (this.checkRoomToHelpRevive(roomIndex)) {
+      let roomName = Memory.myRooms[roomIndex];
+      let roomOther = Game.rooms[roomName];
       let role = 'nextroomer';
       if (this.memory.wayBlocked) {
         role = 'nextroomerattack';
