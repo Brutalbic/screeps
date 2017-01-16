@@ -243,7 +243,7 @@ Room.prototype.checkCanHelp = function() {
     !nearestRoomObj.terminal;
   if (canHelp) {
     let route = this.findRoute(nearestRoom, this.name);
-    if (route.length === 0) {
+    if (route == -2 || route.length === 0) {
       return 'no';
     }
     this.checkRoleToSpawn('carry', config.carryHelpers.maxHelpersAmount, this.storage.id,
