@@ -118,7 +118,10 @@ roles.scout.execute = function(creep) {
       //if (search.path.length > 0) {
       //creep.move(creep.pos.getDirectionTo(search.path[0]));
       //} else {
-      creep.moveTo(targetPosObject);
+      let returnCode = creep.moveTo(targetPosObject, {
+        ignoreCreeps: true,
+        costCallback: creep.room.getAvoids(creep.room)
+      });
       //}
       return true;
     }
